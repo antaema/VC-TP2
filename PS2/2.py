@@ -1,105 +1,68 @@
 from __future__ import division
 import numpy as np
 import cv2 
-import math
 from matplotlib import pyplot as plt
+import sys
+sys.setrecursionlimit(10000)
 
 
+#abre a imagem em grey scale
+img = cv2.imread('anime.jpg',0)
 
-def calculate_entropy(total_size,hist):
-    entropy = 0
-    for i in range(0,len(hist)):
-            if hist[i] > 0:
-                entropy+=(hist[i]/total_size) * math.log((total_size/hist[i]),2)
-    return entropy
+#abre imagem colorida
+img2 = cv2.imread('anime.jpg')
+img2 = cv2.cvtColor(img2,cv2.COLOR_BGR2RGB)
 
+#Aplica Log na Imagem
+gaussian = cv2.GaussianBlur(img,(3,3),0)
+log = cv2.Laplacian(gaussian,cv2.CV_64F)
 
-def calculate_dataGrey(grey):
-    mean_g , std_g = cv2.meanStdDev(grey)
-    hist = cv2.calcHist([grey],[0],None,[256],[0,256])
-    total_size = grey.shape[0] * grey.shape[1]
-    entropy_g = calculate_entropy(total_size,hist)
-    return mean_g, std_g, entropy_g
+sobely1 = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=5)
+sobely2 = cv2.Sobel(img,cv2.CV_64F,0,2,ksize=5)
+sobely3 = cv2.Sobel(img,cv2.CV_64F,0,3,ksize=5)
+sobely4 = cv2.Sobel(img,cv2.CV_64F,0,4,ksize=5)
 
-def normalize_two(f,g):
-    f_mean = np.mean(f)
-    f_std = np.std(f)
-    g_mean = np.mean(g)
-    g_std = np.std(g)
-    alpha = (( g_std / f_std ) * f_mean) - g_mean
-    beta = f_std / g_std
+sobelx1 = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=5)
+sobelx2 = cv2.Sobel(img,cv2.CV_64F,2,0,ksize=5)
+sobelx3 = cv2.Sobel(img,cv2.CV_64F,3,0,ksize=5)
+sobelx4 = cv2.Sobel(img,cv2.CV_64F,4,0,ksize=5)
 
-    print '[*] Alpha : ',
-    print alpha
-    print '[*] Beta: ',
-    print beta
+sobel = sobelx1 + sobelx2 + sobelx3  + sobely1 + sobely2 + sobely3 
 
-    g_new = []
-    for i in range(0,len(g)):
-        g_new.append(beta*(g[i]+alpha))
-    
-    return g_new
+sobelg = cv2.Sobel(gaussian,cv2.CV_64F,1,1,ksize=1)
+canny = cv2.Canny(img,100,200)
 
-def calc_print(means,stds,entropys):
-    mean_m = np.mean(means)
-    mean_s = np.std(means)
-    std_m = np.mean(stds)
-    std_s = np.std(stds)
-    entropy_m = np.mean(entropys)
-    entropy_s = np.std(entropys)
+plt.figure(1)
+plt.axis("off")
+plt.gcf().canvas.set_window_title("Original") 
+plt.get_current_fig_manager().window.wm_geometry("-1400-800")
+plt.imshow(img2, cmap = 'gray')
 
-    print " (*) Mean" 
-    print '     mean:    ',
-    print mean_m 
-    print '     std:     ',
-    print mean_s
-    print '     l1-norm: ',
-    print sum(abs(np.asarray(means)))
-    
+plt.figure(2)
+plt.axis("off")
+plt.gcf().canvas.set_window_title("Metodo 1 LoG")
+plt.get_current_fig_manager().window.wm_geometry("-640-800")
+plt.imshow(log, cmap = 'gray')
 
-    print " (*) Std" 
-    print '     mean:    ',
-    print std_m
-    print '     std:     ',
-    print std_s
-    print '     l1-norm: ',
-    print sum(abs(np.asarray(stds)))
-
-    print " (*) Entropy" 
-    print '     mean:  ',
-    print entropy_m
-    print '     std:   ',
-    print entropy_s
-    print '     l1-norm:  ',
-    print sum(abs(np.asarray(entropys)))
-
-means=[]
-stds=[]
-entropys=[]
-
-cap = cv2.VideoCapture('cabra.mp4')
-
-while cap.isOpened():
-    ret, frame = cap.read()
-    if ret == True:
-        grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        mean, std, entropy = calculate_dataGrey(grey)
-        
-        means.append(mean)
-        stds.append(std)
-        entropys.append(entropy)
-    else:
-        break
-cap.release()
-
-n_stds = normalize_two(means,stds)
-n_entropys = normalize_two(means,entropys)
+plt.figure(3)
+plt.axis("off")
+plt.gcf().canvas.set_window_title("Metodo 2 Sum Sobel")
+plt.get_current_fig_manager().window.wm_geometry("-0-800")
+plt.imshow(sobel, cmap = 'gray')
 
 
-print "[*] Antes"
-calc_print(means,stds,entropys)
+plt.figure(4)
+plt.axis("off")
+plt.gcf().canvas.set_window_title("Metodo 3 Sobel Gaussiano dx,dy 1 ordem")
+plt.get_current_fig_manager().window.wm_geometry("-0-0")
+plt.imshow(sobelg, cmap = 'gray')
 
-print "\n\n[*] Depois"
-calc_print(means,n_stds,n_entropys)
+plt.figure(5)
+plt.axis("off")
+plt.gcf().canvas.set_window_title("Canny para comparacao ")
+plt.get_current_fig_manager().window.wm_geometry("-1400-0")
+plt.imshow(canny, cmap = 'gray')
 
+plt.show()
 
+cv2.waitKey(0)
