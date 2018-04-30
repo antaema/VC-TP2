@@ -36,14 +36,33 @@ def sigma_filter(img,sig):
     hist,bins = np.histogram(img.flatten(),256,[0,256])
     for y in range(0,cols):
         for x in range(0,rows):
-            limIy,limSy,limIx,limSx = calc_lim(x,y,sig,img)
             s = 0
             som = 0
-            for j in range(limIy,limSy):
-                for i in range(limIx,limSx):
-                    s += hist[img[j][i]]
-                    som += img[j][i] * hist[img[j][i]]
+            if img[y][x] - sig < 0:
+                limIc = 0
+            else:
+                limIc = img[y][x] - sig
+
+            if img[y][x] + sig > 255:
+                limSc = 255
+            else:
+                limSc = img[y][x] + sig
+            
+            for i in range(limIc,limSc):
+                s += hist[i]
+                som += i * hist[i]
+            
             nimg[y][x] = round(som/s)
+
+            #Filtro diferene de sigma 
+            # s = 0
+            # som = 0
+            # limIy,limSy,limIx,limSx = calc_lim(x,y,sig,img)
+            # for j in range(limIy,limSy):
+            #     for i in range(limIx,limSx):
+            #         s += hist[img[j][i]]
+            #         som += img[j][i] * hist[img[j][i]]
+            # nimg[y][x] = round(som/s)
     return nimg
 
 def histeql_grey(img,r):
@@ -53,7 +72,7 @@ def histeql_grey(img,r):
     q = cdf.max()
     cdf_m = cdf * 255 / q
     cdf = np.ma.filled(cdf_m,0).astype('uint8')
-    return cdf[img]
+    return cdf[img],cdf_m
 
 
 # open image
@@ -66,7 +85,9 @@ try:
 except:
     print "Valor invalido : Digite um numero inteiro positivo."
     sys.exit(0)
-
+if val == 1:
+    print "Valor invalido : Digite um numero diferente de 1."
+    sys.exit(0)
 sig = val
 
 nimg = sigma_filter(img,sig)
@@ -79,8 +100,10 @@ except:
     sys.exit(0)
 
 nimg = nimg.astype('int')
-himg = histeql_grey(nimg,val)
-himg2 = histeql_grey(img,val)
+
+himg2,cdf_m = histeql_grey(img,val)
+himg,cdf_m = histeql_grey(nimg,val)
+
 plt.figure(1)
 plt.axis("off")
 plt.gcf().canvas.set_window_title("Normal") 
@@ -104,6 +127,27 @@ plt.axis("off")
 plt.gcf().canvas.set_window_title("Equalizado sem sigma")
 plt.get_current_fig_manager().window.wm_geometry("-0-0")
 plt.imshow(himg2, cmap = 'gray')
+
+histnor,bins = np.histogram(img.flatten(),256,[0,256])
+histeq,bins = np.histogram(himg.flatten(),256,[0,256])
+
+plt.figure(5)
+plt.gcf().canvas.set_window_title("Histograma normal")
+plt.get_current_fig_manager().window.wm_geometry("-1400-0")
+plt.plot(histnor,color = 'red')
+plt.xlim([0,256])
+
+plt.figure(6)
+plt.gcf().canvas.set_window_title("Histograma equalizado")
+plt.get_current_fig_manager().window.wm_geometry("-640-0")
+plt.plot(histeq,color = 'green')
+plt.xlim([0,256])
+
+plt.figure(7)
+plt.gcf().canvas.set_window_title("Histograma acumulativo")
+plt.get_current_fig_manager().window.wm_geometry("-640-400")
+plt.plot(cdf_m,color = 'blue')
+plt.xlim([0,256])
 plt.show()
 # plt.get_current_fig_manager().window.wm_geometry("-640-800")
 cv2.waitKey(0)

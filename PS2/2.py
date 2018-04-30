@@ -30,7 +30,7 @@ sobelx4 = cv2.Sobel(img,cv2.CV_64F,4,0,ksize=5)
 sobel = sobelx1 + sobelx2 + sobelx3  + sobely1 + sobely2 + sobely3 
 
 sobelg = cv2.Sobel(gaussian,cv2.CV_64F,1,1,ksize=1)
-canny = cv2.Canny(img,100,200)
+canny = cv2.Canny(gaussian,100,200)
 
 plt.figure(1)
 plt.axis("off")
@@ -59,7 +59,7 @@ plt.imshow(sobelg, cmap = 'gray')
 
 plt.figure(5)
 plt.axis("off")
-plt.gcf().canvas.set_window_title("Canny para comparacao ")
+plt.gcf().canvas.set_window_title("Canny Gaussiano ")
 plt.get_current_fig_manager().window.wm_geometry("-1400-0")
 plt.imshow(canny, cmap = 'gray')
 
